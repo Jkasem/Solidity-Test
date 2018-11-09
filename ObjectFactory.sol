@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-contract CreateObject {
+contract ObjectFactory {
 
     event NewObject(uint objectId, string name, uint dna);
 
