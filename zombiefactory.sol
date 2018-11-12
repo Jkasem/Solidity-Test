@@ -1,32 +1,46 @@
 pragma solidity ^0.4.24;
 
-contract ObjectFactory {
+import "./ownable.sol";
 
-    event NewObject(uint objectId, string name, uint dna);
+contract ZombieFactory is Ownable {
+
+    event NewZombie(uint zombieId, string name, uint dna);
 
     uint dnaDigits = 16;
     uint dnaModulus = 10 ** dnaDigits;
+    uint cooldownTime = 1 days;
 
-    struct Object {
+    struct Zombie {
         string name;
         uint dna;
+        uint32 level;
+        uint32 readyTime;
     }
 
-    Object[] public objects;
+    Zombie[] public zombies;
 
-    function _createObject(string _name, uint _dna) private {
-        uint id = objects.push(Object(_name, _dna)) - 1;
-        emit NewObject(id, _name, _dna);
+    mapping (uint => address) public zombieToOwner;
+    mapping (address => uint) ownerZombieCount;
+
+    function _createZombie(string _name, uint _dna) internal {
+        // Security issue for now and block.timestamp
+        uint id = zombies.push(Zombie(_name, _dna, 1, uint32(block.timestamp + cooldownTime))) - 1;
+        zombieToOwner[id] = msg.sender;
+        ownerZombieCount[msg.sender]++;
+        emit NewZombie(id, _name, _dna);
     }
 
-    function _createRandomDna(string _str) private view returns (uint) {
+    function _generateRandomDna(string _str) private view returns (uint) {
         uint rand = uint(keccak256(abi.encodePacked(_str)));
         return rand % dnaModulus;
     }
 
-    function createRandomObject(string _name) public {
-        uint randDna = _createRandomDna(_name);
-        _createObject(_name, randDna);
+    function createRandomZombie(string _name) public {
+        require(ownerZombieCount[msg.sender] == 0, "Can only create one");
+        uint randDna = _generateRandomDna(_name);
+        randDna = randDna - randDna % 100;
+        _createZombie(_name, randDna);
     }
-    
+
 }
+
